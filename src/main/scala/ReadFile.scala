@@ -4,16 +4,56 @@ import org.apache.http.HttpResponse
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.util.EntityUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
+class ReadFile
 
 object ReadFile extends App {
-  val path2 = "\"https://raw.githubusercontent.com/apache/incubator-carbondata/master/docs/configuration-parameters.md\""
+
+  val logger = LoggerFactory.getLogger(classOf[ReadFile])
+  val url="https://raw.githubusercontent.com/apache/incubator-carbondata/master/docs/"
+  val inputFileExtension=".md"
+  val outputFileExtension=".html"
+
+  val listOfFiles=Array("configuration-parameters",
+   "ddl-operation-on-carbondata",
+    "quick-start-guide",
+    "dml-operation-on-carbondata",
+    "data-management",
+    "faq",
+    "file-structure-of-carbondata",
+    "installation-guide",
+    "supported-data-types-in-carbondata",
+    "troubleshooting",
+    "useful-tips-on-carbondata"
+    )
+
+  import scala.io.Source
+
+  val headerContents: String = Source.fromFile("src/htmls/header.html").mkString
+
+  val location = "latest/"
+
+  listOfFiles.map{file=>
+    val fileURLContent=scala.io.Source.fromURL(url+file+inputFileExtension).mkString
+    val getFileData=getRestContent(fileURLContent)
+    val fileData=FileModification.ConvertMdExtension(getFileData)
+    logger.info("Begin writing ["+file+"."+outputFileExtension+"] at "+location)
+    writeToFile(location+file+outputFileExtension,fileData)
+    logger.info("Successfully written ["+file+"."+outputFileExtension+"] at "+location)
+
+  }
+
+ /* val path2 = "\"https://raw.githubusercontent.com/apache/incubator-carbondata/master/docs/configuration-parameters.md\""
   val path = "https://raw.githubusercontent.com/apache/incubator-carbondata/master/docs/ddl-operation-on-carbondata.md"
-  val path3 = "https://raw.githubusercontent.com/apache/incubator-carbondata/master/docs/quick-start-guide.md"
-  val result = scala.io.Source.fromURL(path3).mkString
+  val path3: String = "https://raw.githubusercontent.com/apache/incubator-carbondata/master/docs/quick-start-guide.md"
+  val result: String = scala.io.Source.fromURL(path3).mkString*/
   //println("______>" + result)
-  val fileData = getRestContent(result)
-  val fileDataAfterConversion = FileModification.ConvertMdExtension(fileData)
+
+
+ /* val fileData: String = getRestContent(result)
+  val fileDataAfterConversion: String = FileModification.ConvertMdExtension(fileData)*/
 
   def getRestContent(data: String): String = {
     val httpClient = new DefaultHttpClient()
@@ -35,15 +75,28 @@ object ReadFile extends App {
   }
 
   def writeToFile(path: String, data: String): Unit = {
-    val writer = new PrintWriter(new File("target/test.html"))
-    writer.write("<html> <body>" + data + "</body></head>")
+    val writer = new PrintWriter(new File(path))
+    writer.write(headerContents + data + "</body></head>")
     writer.close()
   }
 
-  println("---------------------------------Converted File -------------------------")
+  /*println("---------------------------------Converted File -------------------------")
   println(fileDataAfterConversion)
-  writeToFile("", fileDataAfterConversion)
+  writeToFile(location, fileDataAfterConversion)*/
 
+
+  //Code to get files from the folder
+
+/*  val directoryPath = "/home/pallavi/WorkSpace/CarbonData/incubator-carbondata/docs"
+
+   new java.io.File(directoryPath).listFiles.filter(_.getName.endsWith(".md")).map { a =>
+    println("File Name: " + a.getName)
+    println("File Path: " + a.getPath)
+     val fileContent=getRestContent(Source.fromFile(a.getPath).mkString)
+     val modifiedFile=FileModification.ConvertMdExtension(fileContent)
+
+    writeToFile(location+"/"+a.getName+".html",modifiedFile)
+  }*/
 
   //println(getZip())
 
