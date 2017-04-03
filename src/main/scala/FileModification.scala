@@ -1,7 +1,8 @@
-import java.io.{File, PrintWriter}
+import java.io.FileNotFoundException
 
-import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+
+import scala.util.matching.Regex
 
 class FileModification {
   val logger = LoggerFactory.getLogger(classOf[FileModification])
@@ -9,27 +10,32 @@ class FileModification {
   val inputFileExtension = ".md"
   val outputFileExtension = ".html"
 
-  import scala.io.Source
-
-  val headerContents: String = Source.fromFile("src/htmls/header.html").mkString
-
   val location = "latest/"
   val fileReadObject = new FileRead
 
   def convertToHtml: String = {
-    val listOfFiles = readListOfFiles()
+    val listOfFiles = fileReadObject.readListOfFiles()
     val statusList = listOfFiles.map { file =>
-      val fileURLContent = scala.io.Source.fromURL(url + file + inputFileExtension).mkString
-      val getFileData = fileReadObject.getFileContent(fileURLContent)
-      getFileData match {
-        case Some(data: String) => val fileData = fileReadObject.ConvertMdExtension(data)
-          logger.info("Begin writing [" + file + "." + outputFileExtension + "] at " + location)
-          writeToFile(location + file + outputFileExtension, fileData)
-          logger.info("Successfully written [" + file + "." + outputFileExtension + "] at " + location)
-          "Success"
-        case None => logger.error(s"$file Conversion failed ")
-          "Failure"
+      try {
+        val fileURLContent = scala.io.Source.fromURL(url + file + inputFileExtension).mkString
+
+
+        val getFileData = fileReadObject.getFileContent(fileURLContent)
+        getFileData match {
+          case Some(data: String) => val fileData = ConvertMdExtension(data)
+            logger.info("Begin writing [" + file + "." + outputFileExtension + "] at " + location)
+            fileReadObject.writeToFile(location + file + outputFileExtension, fileData)
+            logger.info("Successfully written [" + file + "." + outputFileExtension + "] at " + location)
+            "Success"
+          case None => logger.error(s"$file Conversion failed ")
+            "Failure"
+        }
       }
+      catch {
+        case exception: FileNotFoundException => logger.error(s"{$file}No Such File Exist on git link $url$file$inputFileExtension")
+        case _ => logger.error("Connection Error Please Try Again !!")
+      }
+
     }
 
     if (statusList.contains("Failure"))
@@ -38,16 +44,13 @@ class FileModification {
       "All files successfully Converted"
   }
 
-  private def readListOfFiles(): List[String] = {
-    import scala.collection.JavaConverters._
-    val listOfFiles = ConfigFactory.load().getStringList("fileList").asScala.toList
-    logger.info(s"List of files : $listOfFiles")
-    listOfFiles
+  def ConvertMdExtension(input: String): String = {
+    val modifyContentPattern = new Regex("id=\"user-content-")
+    val modifyMdPattern = new Regex(".md")
+    val contentAfterRemovingUserContent: String = modifyContentPattern replaceAllIn(input, "id=\"")
+    val contentAfterReplacingId: String = modifyMdPattern replaceAllIn(contentAfterRemovingUserContent, ".html")
+    contentAfterReplacingId
   }
 
-  private def writeToFile(path: String, data: String): Unit = {
-    val writer = new PrintWriter(new File(path))
-    writer.write(headerContents + data + "</body></head>")
-    writer.close()
-  }
+
 }
