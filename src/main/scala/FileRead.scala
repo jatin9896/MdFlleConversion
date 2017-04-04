@@ -3,6 +3,7 @@ import java.io.{File, PrintWriter}
 import com.typesafe.config.ConfigFactory
 import org.apache.http.HttpResponse
 import org.apache.http.client.methods.HttpPost
+import org.apache.http.conn.ConnectTimeoutException
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.util.EntityUtils
 import org.slf4j.LoggerFactory
@@ -16,19 +17,27 @@ class FileRead {
   def getFileContent(data: String): Option[String] = {
     val httpClient = new DefaultHttpClient()
     val httpRequest: HttpPost = new HttpPost("https://api.github.com/markdown/raw");
+
     httpRequest.setHeader("Content-type", "text/plain")
 
     import org.apache.http.entity.StringEntity;
     val test = new StringEntity(data)
     httpRequest.setEntity(test)
-    val httpResponse: HttpResponse = httpClient.execute(httpRequest)
-    val responseBody = EntityUtils.toString(httpResponse.getEntity())
-    logger.info(s"status : {${httpResponse.getStatusLine.toString.contains("OK")}}")
-    if (httpResponse.getStatusLine.toString.contains("OK"))
-      Some(responseBody.toString)
-    else {
-      logger.error(s"Fetching file from {$httpRequest} fails {${httpResponse.getStatusLine}}")
-      None
+    try{
+      val httpResponse: HttpResponse = httpClient.execute(httpRequest)
+      val responseBody = EntityUtils.toString(httpResponse.getEntity())
+      logger.info(s"status : {${httpResponse.getStatusLine.toString.contains("OK")}}")
+      if (httpResponse.getStatusLine.toString.contains("OK"))
+        Some(responseBody.toString)
+      else {
+        logger.error(s"Fetching file from {$httpRequest} fails {${httpResponse.getStatusLine}}")
+        None
+      }
+    }
+    catch  {
+      case exception:ConnectTimeoutException=>
+      logger.error("Timeout Exception ")
+        None
     }
 
   }
