@@ -18,8 +18,6 @@ class FileModification {
     val statusList = listOfFiles.map { file =>
       try {
         val fileURLContent = scala.io.Source.fromURL(url + file + inputFileExtension).mkString
-
-
         val getFileData = fileReadObject.getFileContent(fileURLContent)
         getFileData match {
           case Some(data: String) => val fileData = ConvertMdExtension(data)
@@ -35,7 +33,6 @@ class FileModification {
         case exception: FileNotFoundException => logger.error(s"{$file}No Such File Exist on git link $url$file$inputFileExtension")
         case _ => logger.error("Connection Error Please Try Again !!")
       }
-
     }
 
     if (statusList.contains("Failure"))

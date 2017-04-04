@@ -1,12 +1,13 @@
 dist/*
 target/
-latest/
 lib_managed/
 src_managed/
 project/boot/
 project/plugins/project/
+project/target
+project/project
 .history
 .cache
 .lib/
-Contact GitHub API Training Shop Blog About
+.idea/
 
